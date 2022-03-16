@@ -3,6 +3,10 @@ import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
 @Entity()
 export class SMS{
   
+ 
+  @Property({ length: 100, nullable: true })
+  public uuid?: string;
+  
   @PrimaryKey()
   @Property({ length: 100, nullable: false })
   public hash: string;
@@ -22,7 +26,7 @@ export class SMS{
   @Property({ length: 150, nullable: false })
   public message: string;
 
-  @Property({ columnType: 'timestamp', defaultRaw: `NULL` })
+  @Property({ columnType: 'timestamp', default: Date.now() })
   public added_on:Date;
 
   @Property({ length: 50, nullable: false })

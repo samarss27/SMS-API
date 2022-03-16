@@ -1,50 +1,52 @@
 import { MikroORM, EntityManager} from '@mikro-orm/core';
-import { Body, Controller, Headers, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Headers, Post, Query, UseFilters, UseGuards } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { DeviceLoginGuard } from 'src/guards/device-login.guard';
 import { FetchSMS, PostSMS, Registration, SentSMS } from 'src/models/login';
 import { SMS } from 'src/entities/SMS';
 import { DeviceRegistration } from 'src/entities/DeviceRegistration';
+import { HttpExceptionFilter } from 'src/exception.filter';
 
 @Controller('sms')
+@UseGuards(DeviceLoginGuard)
+@UseFilters(HttpExceptionFilter)
 export class SmsController {
-    constructor(
-      private readonly orm: MikroORM,
-      private readonly em: EntityManager,
-      )    {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly em: EntityManager,
+  ){}
 
   @Post('/save')
-  @UseGuards(DeviceLoginGuard)
   public async save_sms( 
     @Body() body: PostSMS, 
-  ) {
+  ){
     try { 
-      let entity = new PostSMS();
+      console.log(body);
+      let entity = new SMS();
+      let message = body.message;
       let hash = createHash('sha1')
-        .update(body.message.trim())
-        .digest()
-        .toString('hex')
+        .update(message)
+        .digest('hex')
+        .toString()
         .toLowerCase(); 
-     // await this.dbcontext.query(`INSERT INTO sms(server_number, phone, recieved_on) VALUES(?,?,?,?,?)`,[hash, body.server_number, body.phone, body.message]);
       entity.hash = hash;
       entity.server_number = body.server_number;
       entity.phone = body.phone
       entity.message = body.message;
       entity.direction = 1;
       entity.status = 0;
-      entity.received_on = body.received_on;
+      entity.recieved_on = body.recieved_on;
       await this.em.persistAndFlush(entity);
     } catch (e) {
       return {
         success: false,
         error: e.message,
-        data: [],
+        data : []
       }
     }
   }
 
   @Post('/fetch')
-  @UseGuards(DeviceLoginGuard)
   public async fetch_sms( 
     @Body() body: FetchSMS, 
   ) {
@@ -54,7 +56,6 @@ export class SmsController {
         status : 0,
         server_number : body.server_number
       });
-      //let sms = await this.dbcontext.query(`Select uuid, phone, message FROM sms_log where server_number = ?`,[body.server_number]);
       return{
         success: true,
         error: "",
@@ -70,7 +71,6 @@ export class SmsController {
   }
 
   @Post('/sent')
-  @UseGuards(DeviceLoginGuard)
   public async sent_sms(
     @Body() body: SentSMS, 
   ) {
@@ -78,11 +78,10 @@ export class SmsController {
       let entity = await this.em.findOneOrFail(SMS, { hash: body.uuid})
       entity.status = 1;
       this.em.persistAndFlush(entity);
-      //await this.dbcontext.query(`UPDATE sms SET status = 1 where hash = ?`,[body.uuid]);
       return{
         success: true,
         error: "",
-        data: "Sms Updated",
+        data: [],
       }
     } catch (e) {
       return {
@@ -94,23 +93,19 @@ export class SmsController {
   }
 
   @Post('/register')
-  @UseGuards(DeviceRegistration)
   public async register(
     @Body() body: Registration, 
     @Headers('X-Device-ID') id: string,
   ) {
     try { 
-      let entity = await this.em.findOneOrFail(DeviceRegistration,{
-        device_ID : id
-      })
-      entity.approved = true;
-      entity.approved_On = Date();
-      entity.appproved_By = body.appproved_By;
+      let entity = new DeviceRegistration();
+      entity.approved = false;
+      entity.approved_On = null;
+      entity.appproved_By = null;
       this.em.persistAndFlush(entity);
-      //await this.dbcontext.query(`UPDATE register SET approved = true, approved_on = CURRENT_TIMESTAMP, approved_by = ? where device_id = ?`,[,body.uuid]);
       return{
         success: true,
-        error: "Device Registered",
+        error: "Device Registeration Request Sent",
         data: [],
       }
     } catch (e) {
@@ -121,5 +116,4 @@ export class SmsController {
       }
     }
   }
-
 }

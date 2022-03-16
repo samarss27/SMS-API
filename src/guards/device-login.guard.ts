@@ -23,20 +23,12 @@ export class DeviceLoginGuard implements CanActivate {
     let application_version = req.header("X-Application-Version");
     let device_id = req.header("X-Device-Id");
     try {
-      let device = await this.em.findOneOrFail(DeviceRegistration,{
+      await this.em.findOneOrFail(DeviceRegistration,{
         device_ID : req.device_id
       });
-      if(!device){
-        let entity = new Login();
-        entity.device_ID = device_id;
-        entity.application_Version = application_version;
-        entity.Application_ID = application_id;
-        entity.Route = route;
-        entity.IP_Address = ip_address;
-        await this.em.persistAndFlush(entity);
-      }
     } catch (error) {
-      return error;
+      return false;
     }
+    return true;
   }
 }

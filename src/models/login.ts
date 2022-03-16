@@ -1,4 +1,4 @@
-import { IsBoolean, IsBooleanString, IsDate, IsDateString, IsNotEmpty, IsNumber, isString, IsString } from "class-validator";
+import { IsBooleanString, IsDateString, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class PostSMS {
   @IsString()
@@ -20,9 +20,9 @@ export class PostSMS {
   @IsNotEmpty()
   @IsDateString()
   public message: string;
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  public received_on:string;
+  public recieved_on:number;
 }
 
 export class FetchSMS {
